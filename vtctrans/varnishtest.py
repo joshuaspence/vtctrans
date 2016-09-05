@@ -1,9 +1,9 @@
 # coding: utf-8
 
-import commands
 import copy
 import hashlib
 import re
+import subprocess
 import sys
 
 class VarnishTest:
@@ -479,21 +479,24 @@ class VarnishTest:
         return ret
 
     #exec varnishtest
-    def runVTC(self, opt):
-        return commands.getoutput(self.vtc + ' ' + opt)
+    def runVTC(self, args):
+        try:
+            return subprocess.check_output([self.vtc] + args)
+        except subprocess.CalledProcessError as ex:
+            return ex.output
 
 
     ############################
     #Complex functions
     ############################
 
-    def execVarnishTest(self, opt):
-        if not -1 == opt.find('-S'):
+    def execVarnishTest(self, args):
+        if '-S' in args:
             #STDINから読み込む
             r= self.parseVTC('\n'.join(sys.stdin.readlines()))
         else:
             #vtc実行
-            r= self.parseVTC(self.runVTC(opt))
+            r= self.parseVTC(self.runVTC(args))
 
         if r['mode'] == 'cmd':
             print r['data']

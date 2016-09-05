@@ -9,7 +9,6 @@ def main():
     if(argv == 1):
         exit
 
-    opt = ' '.join(argv[1:])
-    r= vtc.execVarnishTest(opt)
+    r= vtc.execVarnishTest(argv[1:])
     if(r[0]['result'] != 'passed'):
         exit(1)
