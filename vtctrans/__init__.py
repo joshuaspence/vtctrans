@@ -9,6 +9,10 @@ def main():
     if(argv == 1):
         exit
 
-    r= vtc.execVarnishTest(argv[1:])
-    if(r[0]['result'] != 'passed'):
-        exit(1)
+    results = vtc.execVarnishTest(argv[1:])
+
+    for result in results:
+        if (result['result'] != 'passed'):
+            exit(1)
+
+    exit(0)
