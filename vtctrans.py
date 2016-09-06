@@ -8,20 +8,24 @@ def main():
 	opt  = ''
 	if(argv == 1):
 		exit
-		
+
 	opt = ' '.join(argv[1:])
-	r= vtc.execVarnishTest(opt)
-	if(r[0]['result'] != 'passed'):
-		exit(1)
+	results = vtc.execVarnishTest(opt)
+
+	for result in results:
+	    if (result['result'] != 'passed'):
+		    exit(1)
+
+	exit(0)
 
 class VarnishTest:
 	# regexp
 	rfmt = 0
 	rexp = 0
-	
+
 	# vtc command
 	vtc  = 'varnishtest'
-	
+
 	nowSock = {
 		'client'	:'',
 		'server'	:'',
@@ -73,12 +77,12 @@ class VarnishTest:
 			'delaying'        : 'Sleep',
 			}
 	}
-	
+
 #---------------------------------------------------------------------------------------------------
 	def __init__(self):
 		#regex compile
 		self.rfmt = re.compile('^([-*#]+) +([^ ]+) +([^ ]+) +([^|]+\|)?(.*)$')
-		
+
 		# req.url (/) == / (/) match
 		# req.url (/) == /a (/a) failed
 		self.rexp = re.compile('([^ ]+) \((.*)\) ([=!><]{1,2}) (.*) \((.*)\) (match|failed)')
@@ -102,7 +106,7 @@ class VarnishTest:
 		self.vtcfunc['server']['EXPECT']         = self.conExpect
 		self.vtcfunc['varnish']['EXPECT']        = self.conExpect
 		self.vtcfunc['client']['EXPECT']         = self.conExpect
-		
+
 		#varnish
 		self.vtcfunc['varnish']['CLI RX']        = self.renameVarnishCLI
 		self.vtcfunc['varnish']['CLI RX:RES']    = self.renameVarnishCLI
@@ -112,7 +116,7 @@ class VarnishTest:
 
 		#server
 
-	
+
 	# イベント解析のメインループ
 	def constructEvent(self, data):
 		i = -1
@@ -127,7 +131,7 @@ class VarnishTest:
 					data['event'].append(self.replaceStr(v,val))
 			v['event'] = i
 
-	
+
 	# 構造作成のメインループ
 	def constructData(self, data):
 		idx  = 0
@@ -142,7 +146,7 @@ class VarnishTest:
 			if subcomp in self.vtcfunc[comptype]:
 				skip = self.vtcfunc[comptype][subcomp](v, data, idx)
 			idx += 1
-			
+
 
 	# VarnishCLIのまとめ
 	def renameVarnishCLI(self, data, ret, idx):
@@ -153,7 +157,7 @@ class VarnishTest:
 		else:
 			data['aliassubcomp'] =  'CLI:' + data['comp'] + ' -> ' +  data['comp']
 		return 0
-	
+
 	# EXPECTのまとめ
 	def conExpect(self, data, ret, idx):
 		if not 'expect' in ret:
@@ -176,7 +180,7 @@ class VarnishTest:
 				if m:
 					break
 				nc += 1
-		
+
 		tmp = {
 			'comp'     : data['comp'],
 			's1_key'   : m.group(1),
@@ -190,7 +194,7 @@ class VarnishTest:
 			tmp['httpdata'] = data['httpdata']
 		ret['expect'].append(tmp)
 		return skip
-	
+
 	def mergeExpect(self, ret):
 		if not ret.has_key('expect'):
 			return
@@ -203,13 +207,13 @@ class VarnishTest:
 			for vv in v['httpdata']['head']:
 				httpdata += vv
 			key = hashlib.md5(httpdata).hexdigest()
-			
+
 			if not ret['mergeExpect'].has_key(key):
 				ret['mergeExpect'][key] = {}
 				ret['mergeExpect'][key]['httpdata'] = v['httpdata']
 				ret['mergeExpect'][key]['expect']   = []
 				ret['mergeExpect'][key]['comp']     = v['comp']
-			
+
 			ret['mergeExpect'][key]['expect'].append({
 				'operator' : v['operator'],
 				'result'   : v['result'],
@@ -218,7 +222,7 @@ class VarnishTest:
 				's2_key'   : v['s2_key'],
 				's2_val'   : v['s2_val'],
 				})
-		
+
 	#マクロ定義を作成
 	def conMacro(self, data, ret, idx):
 		if not 'macro' in ret:
@@ -227,7 +231,7 @@ class VarnishTest:
 		ret['macro'][tmp[0]] = tmp[1]
 		return 0
 
-	
+
 	def parseLine(self, line, idx = 0):
 		# sucess line
 		# # top TEST example.vtc passed (0.498)
@@ -248,7 +252,7 @@ class VarnishTest:
 				'msg'     : ''  , # message
 				'raw'     : ''    # rawdata
 			}
-		
+
 		m = self.rfmt.search(line)
 		ret['raw'] = line
 		if not m:
@@ -295,7 +299,7 @@ class VarnishTest:
 				ret['subcomp']  = m.group(4).rstrip('|')
 			else:
 				self.SubComp(ret)
-			
+
 		self.compType(ret)
 		return ret;
 	#コンポーネントタイプを判定
@@ -340,7 +344,7 @@ class VarnishTest:
 	#Filter functions
 	############################
 
-	
+
 	# varnishtestのフィルタ
 	def filterVarnishtest(self, data, ret):
 		#  | top |                | test.vtc passed (0.504) test.vtc passed
@@ -348,7 +352,7 @@ class VarnishTest:
 		if data['msg'].startswith('TEST '):
 			data['subcomp'] = 'TEST'
 			data['msg']     = data['msg'].replace('TEST ','')
-		
+
 		if data['type'] == 1:
 			self.addError("[" + data['comp'] + "] "+ data['msg'], ret)
 
@@ -408,7 +412,7 @@ class VarnishTest:
 			data['msg'] = data['msg'].replace('CLI RX ','')
 		if data['type'] == 1:
 			self.addError("[" + data['comp'] + "] "+ data['msg'], ret)
-	
+
 	# データ正規化用フィルタ
 	def filterData(self, data):
 		for v in data['line']:
@@ -424,7 +428,7 @@ class VarnishTest:
 	def afterFilterClient(self, data, ret):
 		#開いてるソケット情報
 		#  | c1 |       | connected fd 10 from 127.0.0.1 48351 to 127.0.0.1 34994
-		
+
 		if data['msg'].startswith('connected fd '):
 			for k, v in ret['macro'].items():
 				if k.endswith('_sock'):
@@ -475,7 +479,7 @@ class VarnishTest:
 		if not re.search('^[-*#]',txt):
 			return {'mode':'cmd','data':txt}
 		r   = txt.splitlines()
-		
+
 		i = 0
 		ret = {'mode':'vtc','line':[]}
 		for v in r:
@@ -483,7 +487,7 @@ class VarnishTest:
 				continue
 			i+=1
 			ret['line'].append(self.parseLine(v, i))
-		
+
 		return ret
 
 	#exec varnishtest
@@ -502,7 +506,7 @@ class VarnishTest:
 		else:
 			#vtc実行
 			r= self.parseVTC(self.runVTC(opt))
-		
+
 		if r['mode'] == 'cmd':
 			print r['data']
 			return
@@ -520,7 +524,7 @@ class VarnishTest:
 			self.constructEvent(v)
 			#expectデータのマージ
 			self.mergeExpect(v)
-			
+
 			#出力
 			self.printVTC(v)
 		return r
@@ -549,7 +553,7 @@ class VarnishTest:
 		self.printLine()
 		for v in r['error']:
 			print v
-		print 
+		print
 
 	def printLine(self, char = '-' ,length = 70):
 		print char * length
@@ -557,11 +561,11 @@ class VarnishTest:
 	def printLineGlue(self, idx, char = '-', glue = '+', length = 70):
 		length -= 1
 		print char * idx + glue + '-' * (length - idx)
-		
+
 	def printMainLine(self, data):
 		self.printLine('-')
 		print("<<<< Test start >>>>")
-		
+
 		#iline  = data['line']
 		#event = data['event']
 		nowEvent = -1
@@ -586,7 +590,7 @@ class VarnishTest:
 			if evMaxSubComp[evi] < lengthSubComp:
 				evMaxSubComp[evi] = lengthSubComp
 
-		
+
 		for v in data['line']:
 			if nowEvent < v['event']:
 				#self.printLine('-')
@@ -600,7 +604,7 @@ class VarnishTest:
 				subcomp = v['aliassubcomp']
 			else:
 				subcomp = v['subcomp']
-			
+
 			sc  = ' ' * (evMaxComp[nowEvent] - len(v['comp']))
 			ssc = ' ' * (evMaxSubComp[nowEvent] - len(subcomp))
 			print v['raw']
@@ -611,27 +615,27 @@ class VarnishTest:
 				subcomp,
 				ssc,
 				v['msg'],
-				
+
 				)
 			'''
 		print
 
-	
+
 	def printKV(self, dic, title = '' , desc = '' , dmt = '|', mgn = 2):
 		items = dic.items()
 		init  = 0
 		if title != '':
 			init = len(title)
 		max   = self.chkMaxLength(dic.keys(), init)
-		
-		
+
+
 		if title != '':
 			print title + self.pad(max,title) + (' ' * mgn) + dmt + (' ' * mgn) + desc
 			self.printLineGlue(max + mgn)
 		for k, v in items:
 			print k + self.pad(max,k) + (' ' * mgn) + dmt + (' ' * mgn) + v
-		
-	
+
+
 	def printMacro(self, data):
 		self.printLine('#')
 		print 'Macro list'
@@ -650,7 +654,7 @@ class VarnishTest:
 		#print ' '* 10 + ' -'+ '-' * length + '-'
 		#print ' '* 10 + '| '+  data ['vtcname'] +' is '+ data['result'] + ' |'
 		#print ' '* 10 + ' -'+ '-' * length + '-'
-	
+
 	def printExpect(self, data):
 		if not data.has_key('mergeExpect'):
 			return
@@ -732,7 +736,7 @@ class VarnishTest:
 				for vv in v['httpdata']['body']:
 					print fmt  % ('', 'HTTP:body', vv,'','')
 				print fmt  % ('', 'HTTP:bodylen', v['httpdata']['length'],'','')
-			
+
 			print fmt  % ('', 'expr', v['s1_key'], v['operator'], v['s2_key'])
 			print fmt  % ('', 'expr(val)', v['s1_val'], v['operator'], v['s2_val'])
 			self.printLine()
