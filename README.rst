@@ -9,7 +9,7 @@ Re-format tool for varnishtest
 
 :Author: Shohei Tanaka(@xcir)
 :Date: 2013-04-30
-:Version: 0.1.1
+:Version: 0.1.2
 :Manual section: 1
 
 DESCRIPTION
