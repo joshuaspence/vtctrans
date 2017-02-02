@@ -1,4 +1,5 @@
-*.py[co]
-
-# Virtualenv
+/build/
+/dist/
 /venv/
+/*.egg-info/
+*.py[co]
