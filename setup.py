@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='vtctrans',
-    version='0.0-alpha2-varnish30',
+    version='0.1.0',
     description='Re-format tool for varnishtest',
     packages=['vtctrans'],
     install_requires=[
